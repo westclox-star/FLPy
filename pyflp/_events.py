@@ -59,6 +59,19 @@ class _EventEnumMeta(enum.EnumMeta):
         """
         return obj in tuple(self)
 
+    def __call__(cls, value, names=None, *args, **kwargs):
+        if names is not None:
+            return super().__call__(value, names, *args, **kwargs)
+        if not cls._member_names_:
+            # Python 3.12 calling an empty enum raises TypeError before _missing_ is invoked. 
+            # this should be a temp fix. 
+            # The real fix is to not rely on _missing_ and untyped enum lookup
+            result = cls._missing_(value)
+            if result is None:
+                raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+            return result
+        return super().__call__(value)
+
 
 class EventEnum(int, enum.Enum, metaclass=_EventEnumMeta):
     """IDs used by events.
